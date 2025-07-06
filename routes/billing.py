@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, redirect, url_for, session, send_file
+from flask import Blueprint, render_template, request, redirect, url_for, session
 import sqlite3
 import pdfkit
 import platform
@@ -6,17 +6,14 @@ import os
 
 billing_bp = Blueprint('billing', __name__, url_prefix='/billing')
 
-# ✅ PDFKit config only for Windows
+# ✅ PDFKit config (only for Windows)
 if platform.system() == "Windows":
     PDFKIT_PATH = r"C:\Program Files\wkhtmltopdf\bin\wkhtmltopdf.exe"
-    if os.path.exists(PDFKIT_PATH):
-        config = pdfkit.configuration(wkhtmltopdf=PDFKIT_PATH)
-    else:
-        config = None
+    config = pdfkit.configuration(wkhtmltopdf=PDFKIT_PATH) if os.path.exists(PDFKIT_PATH) else None
 else:
-    config = None  # Render (Linux) - no wkhtmltopdf
+    config = None  # PDF not supported on platforms like Render (Linux)
 
-# ✅ DB Connection
+# ✅ DB connection helper
 def get_db_connection():
     conn = sqlite3.connect('db/sapthagiri.db')
     conn.row_factory = sqlite3.Row
@@ -96,7 +93,6 @@ def view_invoice(invoice_id):
 
     total = sum(item['price'] * item['quantity'] for item in items)
 
-    # Add subtotal to each item for HTML
     enriched_items = []
     for item in items:
         enriched_items.append({
@@ -107,8 +103,13 @@ def view_invoice(invoice_id):
             'subtotal': item['price'] * item['quantity']
         })
 
-    return render_template("invoice.html", client=client, items=enriched_items, total=total,
-                           date=invoice['created_at'], invoice_id=invoice_id)
+    return render_template("invoice.html", 
+                           client=client, 
+                           items=enriched_items, 
+                           total=total,
+                           date=invoice['created_at'], 
+                           invoice_id=invoice_id,
+                           request=request)  # ✅ Needed for WhatsApp link
 
 # ---------- EXPORT TO PDF ----------
 @billing_bp.route('/export/pdf/<int:invoice_id>')
@@ -131,6 +132,7 @@ def export_invoice_pdf(invoice_id):
     conn.close()
 
     total = sum(item['price'] * item['quantity'] for item in items)
+
     enriched_items = []
     for item in items:
         enriched_items.append({
@@ -141,8 +143,13 @@ def export_invoice_pdf(invoice_id):
             'subtotal': item['price'] * item['quantity']
         })
 
-    html = render_template("invoice.html", client=client, items=enriched_items, total=total,
-                           date=invoice['created_at'], invoice_id=invoice_id)
+    html = render_template("invoice.html", 
+                           client=client, 
+                           items=enriched_items, 
+                           total=total,
+                           date=invoice['created_at'], 
+                           invoice_id=invoice_id,
+                           request=request)
 
     pdf = pdfkit.from_string(html, False, configuration=config)
 
