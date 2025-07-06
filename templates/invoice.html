@@ -69,83 +69,115 @@
       height: 80px;
       margin-top: 10px;
     }
+
+    /* Print button styling */
+    .no-print {
+      text-align: center;
+      margin: 20px 0;
+    }
+
+    .print-button {
+      padding: 10px 20px;
+      font-size: 16px;
+      cursor: pointer;
+      background-color: #28a745;
+      border: none;
+      color: white;
+      border-radius: 5px;
+      transition: background-color 0.3s ease;
+    }
+
+    .print-button:hover {
+      background-color: #218838;
+    }
+
+    /* Hide print button when printing */
+    @media print {
+      .no-print {
+        display: none;
+      }
+    }
   </style>
 </head>
 <body>
 
-<div class="invoice-box">
-  <div class="text-center">
-    <div class="logo">Sapthagiri Foods</div>
-    <div>
-      Bangalore, Karnataka<br>
-      <strong>GSTIN: 29ABCDE1234F1Z5</strong>
-    </div>
+  <div class="no-print">
+    <button class="print-button" onclick="window.print()">🖨️ Print Invoice</button>
   </div>
 
-  <table class="info">
-    <tr>
-      <td>
-        <strong>Invoice To:</strong><br>
-        {{ client.shop_name }}<br>
-        {{ client.owner_name }}<br>
-        {{ client.address }}
-      </td>
-      <td class="text-right">
-        <strong>Date:</strong><br>
-        {{ date }}
-      </td>
-    </tr>
-  </table>
+  <div class="invoice-box">
+    <div class="text-center">
+      <div class="logo">Sapthagiri Foods</div>
+      <div>
+        Bangalore, Karnataka<br>
+        <strong>GSTIN: 29ABCDE1234F1Z5</strong>
+      </div>
+    </div>
 
-  <table class="items">
-    <thead>
-      <tr>
-        <th>Item</th>
-        <th>Unit</th>
-        <th>Quantity</th>
-        <th>Rate (₹)</th>
-        <th>Subtotal (₹)</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for item in items %}
-      <tr>
-        <td>{{ item.name }}</td>
-        <td>{{ item.unit }}</td>
-        <td>{{ item.quantity }}</td>
-        <td>{{ item.price }}</td>
-        <td>{{ item.subtotal }}</td>
-      </tr>
-      {% endfor %}
-    </tbody>
-    <tfoot>
-      <tr>
-        <td colspan="4" class="text-right"><strong>Total</strong></td>
-        <td><strong>₹{{ total }}</strong></td>
-      </tr>
-    </tfoot>
-  </table>
-
-  <div class="signature-section">
-    <table style="width: 100%;">
+    <table class="info">
       <tr>
         <td>
-          <strong>Authorized Signature:</strong>
-          <div style="margin-top: 40px;">__________________________</div>
+          <strong>Invoice To:</strong><br>
+          {{ client.shop_name }}<br>
+          {{ client.owner_name }}<br>
+          {{ client.address }}
         </td>
         <td class="text-right">
-          <strong>Firm Seal / Stamp:</strong>
-          <div class="stamp-box"></div>
+          <strong>Date:</strong><br>
+          {{ date }}
         </td>
       </tr>
     </table>
-  </div>
 
-  <div class="footer">
-    Thank you for choosing Sapthagiri Foods!<br>
-    For inquiries, contact: +91-9242143039
+    <table class="items">
+      <thead>
+        <tr>
+          <th>Item</th>
+          <th>Unit</th>
+          <th>Quantity</th>
+          <th>Rate (₹)</th>
+          <th>Subtotal (₹)</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in items %}
+        <tr>
+          <td>{{ item.name }}</td>
+          <td>{{ item.unit }}</td>
+          <td>{{ item.quantity }}</td>
+          <td>{{ item.price }}</td>
+          <td>{{ item.subtotal }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+      <tfoot>
+        <tr>
+          <td colspan="4" class="text-right"><strong>Total</strong></td>
+          <td><strong>₹{{ total }}</strong></td>
+        </tr>
+      </tfoot>
+    </table>
+
+    <div class="signature-section">
+      <table style="width: 100%;">
+        <tr>
+          <td>
+            <strong>Authorized Signature:</strong>
+            <div style="margin-top: 40px;">__________________________</div>
+          </td>
+          <td class="text-right">
+            <strong>Firm Seal / Stamp:</strong>
+            <div class="stamp-box"></div>
+          </td>
+        </tr>
+      </table>
+    </div>
+
+    <div class="footer">
+      Thank you for choosing Sapthagiri Foods!<br>
+      For inquiries, contact: +91-9242143039
+    </div>
   </div>
-</div>
 
 </body>
 </html>
