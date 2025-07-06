@@ -1,7 +1,5 @@
 from flask import Blueprint, render_template, request, redirect, url_for, session
 import sqlite3
-from io import BytesIO
-from xhtml2pdf import pisa  # ✅ PDF generation without OS-level dependencies
 
 billing_bp = Blueprint('billing', __name__, url_prefix='/billing')
 
@@ -65,7 +63,7 @@ def generate_invoice(client_id):
     conn.close()
     return render_template('generate_invoice.html', client=client, items=items, prices=prices)
 
-# VIEW INVOICE
+# VIEW INVOICE (with print option in template)
 @billing_bp.route('/view/<int:invoice_id>')
 def view_invoice(invoice_id):
     if session.get('role') != 'worker':
@@ -98,53 +96,3 @@ def view_invoice(invoice_id):
                            date=invoice['created_at'], 
                            invoice_id=invoice_id,
                            request=request)
-
-# EXPORT TO PDF (Download)
-@billing_bp.route('/print/<int:invoice_id>')
-def export_invoice_pdf(invoice_id):
-    if session.get('role') != 'worker':
-        return redirect(url_for('auth.login'))
-
-    conn = get_db_connection()
-    invoice = conn.execute("SELECT * FROM Invoices WHERE id = ?", (invoice_id,)).fetchone()
-    client = conn.execute("SELECT * FROM Clients WHERE id = ?", (invoice['client_id'],)).fetchone()
-    items = conn.execute("""
-        SELECT Items.name, Items.unit, InvoiceItems.price, InvoiceItems.quantity
-        FROM InvoiceItems
-        JOIN Items ON Items.id = InvoiceItems.item_id
-        WHERE InvoiceItems.invoice_id = ?
-    """, (invoice_id,)).fetchall()
-    conn.close()
-
-    total = sum(item['price'] * item['quantity'] for item in items)
-    enriched_items = [{
-        'name': item['name'],
-        'unit': item['unit'],
-        'price': item['price'],
-        'quantity': item['quantity'],
-        'subtotal': item['price'] * item['quantity']
-    } for item in items]
-
-    html = render_template("invoice.html", 
-                           client=client, 
-                           items=enriched_items, 
-                           total=total,
-                           date=invoice['created_at'], 
-                           invoice_id=invoice_id,
-                           request=request)
-
-    pdf_stream = BytesIO()
-    pisa_status = pisa.CreatePDF(html, dest=pdf_stream)
-
-    if pisa_status.err:
-        return "❌ PDF generation failed", 500
-
-    pdf_stream.seek(0)
-    return (
-        pdf_stream.read(),
-        200,
-        {
-            'Content-Type': 'application/pdf',
-            'Content-Disposition': f'attachment; filename=invoice_{invoice_id}.pdf'
-        }
-    )
