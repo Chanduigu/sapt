@@ -1,5 +1,5 @@
-Flask
-Jinja2
-Werkzeug
 pdfkit
 gunicorn
+flask
+Jinja2
+Werkzeug
