@@ -63,8 +63,15 @@
 
       <table class="table table-borderless info-table">
         <tr>
-          <td><strong>Invoice To:</strong><br>{{ client.shop_name }}<br>{{ client.owner_name }}<br>{{ client.address }}</td>
-          <td class="text-end"><strong>Date:</strong><br>{{ date }}</td>
+          <td>
+            <strong>Invoice To:</strong><br>
+            {{ client.shop_name }}<br>
+            {{ client.owner_name }}<br>
+            {{ client.address }}
+          </td>
+          <td class="text-end">
+            <strong>Date:</strong><br>{{ date }}
+          </td>
         </tr>
       </table>
 
@@ -107,27 +114,33 @@
           <div class="stamp-box w-100"></div>
         </div>
       </div>
- <div class="footer-note">
+
+      <div class="footer-note">
         Thank you for choosing Sapthagiri Foods!<br>
         For inquiries, contact: +91-9242143039
       </div>
+
       <div class="mt-4 text-center no-print">
-        <a href="{{ url_for('billing.export_invoice_pdf', invoice_id=invoice_id) }}" class="btn btn-primary me-2">📄 Download PDF</a>
-        <a href="#" onclick="window.print()" class="btn btn-secondary me-2">🖨️ Print</a>
+        <a href="{{ url_for('billing.export_invoice_pdf', invoice_id=invoice_id) }}" class="btn btn-primary me-2">
+          📄 Download PDF
+        </a>
+
+        <a href="#" onclick="window.print()" class="btn btn-secondary me-2">
+          🖨️ Print
+        </a>
 
         <!-- ✅ Share on WhatsApp -->
         <a 
           class="btn btn-success"
           target="_blank"
-          href="https://wa.me/?text={{ 
-            'Invoice from Sapthagiri Foods for ' ~ client.shop_name ~ 
+          href="https://wa.me/?text={{ (
+            '📄 Sapthagiri Foods Invoice for ' ~ client.shop_name ~ 
             ' - Total ₹' ~ total ~ 
-            '. View it here: ' ~ request.url | urlencode 
-          }}"
+            '. Download PDF: ' ~ request.url_root ~ 'static/invoices/invoice_' ~ invoice_id ~ '.pdf'
+          ) | urlencode }}"
         >📤 Share on WhatsApp</a>
       </div>
 
-     
     </div>
   </div>
 
