@@ -1,0 +1,74 @@
+{% extends 'base.html' %}
+{% block title %}Generate Invoice - {{ client.shop_name }}{% endblock %}
+
+{% block content %}
+<style>
+  body {
+    background: #f4f7fa;
+    font-family: 'Segoe UI', sans-serif;
+  }
+
+  .invoice-form {
+    background: #fff;
+    border-radius: 10px;
+    padding: 30px;
+    box-shadow: 0 0 15px rgba(0, 0, 0, 0.05);
+  }
+
+  h4 {
+    font-weight: bold;
+    color: #28a745;
+    margin-bottom: 25px;
+  }
+
+  table th {
+    background-color: #e9f5ee;
+  }
+
+  .btn-success {
+    padding: 10px 20px;
+    font-weight: 600;
+  }
+
+  @media (max-width: 576px) {
+    table {
+      font-size: 14px;
+    }
+  }
+</style>
+
+<div class="container my-5">
+  <div class="invoice-form">
+    <h4>Invoice for {{ client.shop_name }}</h4>
+
+    <form method="POST">
+      <table class="table table-bordered align-middle">
+        <thead>
+          <tr>
+            <th>Item</th>
+            <th>Unit</th>
+            <th>Price (₹)</th>
+            <th>Quantity</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in items %}
+          <tr>
+            <td>{{ item.name }}</td>
+            <td>{{ item.unit }}</td>
+            <td>{{ prices.get(item.id, 'N/A') }}</td>
+            <td>
+              <input type="number" name="qty_{{ item.id }}" class="form-control" min="0" placeholder="0">
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+
+      <div class="d-flex justify-content-end mt-4">
+        <button type="submit" class="btn btn-success">Generate Invoice</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

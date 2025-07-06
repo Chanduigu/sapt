@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Dashboard – {{ role|capitalize }}</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <style>
+    body {
+      background-color: #f0f4f7;
+      font-family: 'Segoe UI', sans-serif;
+    }
+
+    .dashboard-box {
+      max-width: 600px;
+      margin: 60px auto;
+      background: white;
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 0 30px rgba(0, 0, 0, 0.06);
+    }
+
+    .brand-header {
+      font-size: 28px;
+      font-weight: bold;
+      color: #2e7d32;
+      text-align: center;
+      margin-bottom: 10px;
+    }
+
+    .role-subtitle {
+      text-align: center;
+      color: #555;
+      font-size: 16px;
+      margin-bottom: 30px;
+    }
+
+    .btn {
+      font-weight: 500;
+    }
+
+    .nav-links {
+      display: flex;
+      justify-content: center;
+      gap: 15px;
+      flex-wrap: wrap;
+    }
+
+    .logout-link {
+      text-align: center;
+      margin-top: 25px;
+    }
+
+    @media (max-width: 576px) {
+      .dashboard-box {
+        padding: 20px;
+        margin: 30px 15px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <div class="dashboard-box">
+      <div class="brand-header">Sapthagiri Foods</div>
+      <div class="role-subtitle">Welcome, {{ role|capitalize }}!</div>
+
+      {% if role == 'admin' %}
+      <div class="nav-links">
+        <a href="{{ url_for('admin.manage_clients') }}" class="btn btn-outline-primary">Manage Clients</a>
+        <a href="{{ url_for('admin.manage_items') }}" class="btn btn-outline-success">Manage Products</a>
+        <a href="#" class="btn btn-outline-warning">Reports</a>
+      </div>
+
+      {% elif role == 'worker' %}
+      <div class="nav-links">
+        <a href="{{ url_for('billing.select_client') }}" class="btn btn-outline-success">Generate Invoice</a>
+      </div>
+      {% endif %}
+
+      <div class="logout-link">
+        <a href="{{ url_for('auth.logout') }}" class="btn btn-secondary">Logout</a>
+      </div>
+    </div>
+  </div>
+
+</body>
+</html>

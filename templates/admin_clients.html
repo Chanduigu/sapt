@@ -1,0 +1,55 @@
+{% extends 'base.html' %}
+
+{% block title %}Manage Clients - Admin{% endblock %}
+
+{% block content %}
+<h3 class="text-success">Clients</h3>
+
+<h5 class="mt-4">Add New Client</h5>
+<form method="POST" action="{{ url_for('admin.add_client') }}" class="row g-3">
+  <div class="col-md-3">
+    <input type="text" name="shop_name" class="form-control" placeholder="Shop Name" required>
+  </div>
+  <div class="col-md-3">
+    <input type="text" name="owner_name" class="form-control" placeholder="Owner Name" required>
+  </div>
+  <div class="col-md-3">
+    <input type="text" name="address" class="form-control" placeholder="Address">
+  </div>
+  <div class="col-md-2">
+    <input type="text" name="phone" class="form-control" placeholder="Phone">
+  </div>
+  <div class="col-md-1">
+    <button class="btn btn-success w-100">Add</button>
+  </div>
+</form>
+
+<hr>
+
+<h5>All Clients</h5>
+<table class="table table-bordered">
+  <thead>
+    <tr>
+      <th>Shop Name</th>
+      <th>Owner</th>
+      <th>Address</th>
+      <th>Phone</th>
+      <th>Action</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for client in clients %}
+    <tr>
+      <td>{{ client['shop_name'] }}</td>
+      <td>{{ client['owner_name'] }}</td>
+      <td>{{ client['address'] }}</td>
+      <td>{{ client['phone'] }}</td>
+      <td>
+        <a href="{{ url_for('admin.prices', client_id=client['id']) }}" class="btn btn-primary btn-sm">Set Prices</a>
+        <a href="{{ url_for('admin.delete_client', client_id=client['id']) }}" class="btn btn-danger btn-sm ms-1">Delete</a>
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}
