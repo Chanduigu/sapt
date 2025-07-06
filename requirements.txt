@@ -1,5 +1,3 @@
 Flask
 gunicorn
-pdfkit
-Jinja2
-Werkzeug
+weasyprint
