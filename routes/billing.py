@@ -1,152 +1,147 @@
-from flask import Blueprint, render_template, request, redirect, url_for, session
-import sqlite3
-import os
-from weasyprint import HTML  # ✅ WeasyPrint instead of pdfkit
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Sapthagiri Foods – Invoice</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
 
-billing_bp = Blueprint('billing', __name__, url_prefix='/billing')
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background-color: #f8f9fa;
+    }
 
-# ✅ DB connection helper
-def get_db_connection():
-    conn = sqlite3.connect('db/sapthagiri.db')
-    conn.row_factory = sqlite3.Row
-    return conn
+    .invoice-box {
+      background: white;
+      padding: 30px;
+      border: 1px solid #ccc;
+      border-radius: 10px;
+      margin: auto;
+      max-width: 800px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
 
-# ---------- STEP 1: Client Selection ----------
-@billing_bp.route('/select')
-def select_client():
-    if session.get('role') != 'worker':
-        return redirect(url_for('auth.login'))
+    .logo {
+      font-size: 28px;
+      font-weight: bold;
+      color: #198754;
+    }
 
-    conn = get_db_connection()
-    clients = conn.execute('SELECT * FROM Clients').fetchall()
-    conn.close()
-    return render_template('select_client.html', clients=clients)
+    .info-table td {
+      padding: 5px 10px;
+    }
 
-# ---------- STEP 2: Invoice Generation ----------
-@billing_bp.route('/invoice/<int:client_id>', methods=['GET', 'POST'])
-def generate_invoice(client_id):
-    if session.get('role') != 'worker':
-        return redirect(url_for('auth.login'))
+    .stamp-box {
+      height: 100px;
+      border: 2px dashed #999;
+      border-radius: 6px;
+    }
 
-    conn = get_db_connection()
-    client = conn.execute("SELECT * FROM Clients WHERE id = ?", (client_id,)).fetchone()
-    items = conn.execute("SELECT * FROM Items").fetchall()
-    price_data = conn.execute("SELECT item_id, price FROM ClientItemPrices WHERE client_id = ?", (client_id,)).fetchall()
-    prices = {row["item_id"]: row["price"] for row in price_data}
+    .footer-note {
+      font-size: 12px;
+      color: #555;
+      margin-top: 20px;
+      text-align: center;
+    }
 
-    if request.method == 'POST':
-        quantities = {int(k.split('_')[1]): int(v) for k, v in request.form.items() if v and v.isdigit()}
-        invoice_items = []
-        total = 0
+    @media print {
+      .no-print { display: none !important; }
+      body { background: white !important; }
+      .invoice-box { box-shadow: none !important; border: none !important; }
+    }
+  </style>
+</head>
+<body>
 
-        for item in items:
-            qty = quantities.get(item['id'], 0)
-            price = prices.get(item['id'], 0)
-            if qty > 0:
-                subtotal = qty * price
-                total += subtotal
-                invoice_items.append((item['id'], qty, price))
+<div class="container my-4">
+  <div class="invoice-box">
+    <div class="text-center mb-4">
+      <div class="logo">Sapthagiri Foods</div>
+      <div>Bangalore, Karnataka<br><strong>GSTIN: 29ABCDE1234F1Z5</strong></div>
+    </div>
 
-        if invoice_items:
-            cursor = conn.cursor()
-            cursor.execute("INSERT INTO Invoices (client_id, worker) VALUES (?, ?)", 
-                           (client_id, session.get('username')))
-            invoice_id = cursor.lastrowid
+    <table class="table table-borderless info-table">
+      <tr>
+        <td>
+          <strong>Invoice To:</strong><br>
+          {{ client.shop_name }}<br>
+          {{ client.owner_name }}<br>
+          {{ client.address }}
+        </td>
+        <td class="text-end">
+          <strong>Date:</strong><br>{{ date }}
+        </td>
+      </tr>
+    </table>
 
-            for item_id, qty, price in invoice_items:
-                cursor.execute("INSERT INTO InvoiceItems (invoice_id, item_id, quantity, price) VALUES (?, ?, ?, ?)",
-                               (invoice_id, item_id, qty, price))
-            conn.commit()
-            conn.close()
-            return redirect(url_for('billing.view_invoice', invoice_id=invoice_id))
+    <table class="table table-bordered">
+      <thead class="table-success">
+        <tr>
+          <th>Item</th>
+          <th>Unit</th>
+          <th>Quantity</th>
+          <th>Rate (₹)</th>
+          <th>Subtotal (₹)</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in items %}
+        <tr>
+          <td>{{ item.name }}</td>
+          <td>{{ item.unit }}</td>
+          <td>{{ item.quantity }}</td>
+          <td>{{ item.price }}</td>
+          <td>{{ item.subtotal }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+      <tfoot>
+        <tr>
+          <th colspan="4" class="text-end">Total</th>
+          <th>₹{{ total }}</th>
+        </tr>
+      </tfoot>
+    </table>
 
-        conn.close()
-        return redirect(url_for('billing.generate_invoice', client_id=client_id))
+    <div class="row mt-5">
+      <div class="col-md-6">
+        <p><strong>Authorized Signature:</strong></p>
+        <div class="mt-5">__________________________</div>
+      </div>
+      <div class="col-md-6 text-end">
+        <p><strong>Firm Seal / Stamp:</strong></p>
+        <div class="stamp-box w-100"></div>
+      </div>
+    </div>
 
-    conn.close()
-    return render_template('generate_invoice.html', client=client, items=items, prices=prices)
+    <div class="footer-note">
+      Thank you for choosing Sapthagiri Foods!<br>
+      For inquiries, contact: +91-9242143039
+    </div>
 
-# ---------- VIEW INVOICE ----------
-@billing_bp.route('/view/<int:invoice_id>')
-def view_invoice(invoice_id):
-    if session.get('role') != 'worker':
-        return redirect(url_for('auth.login'))
+    <div class="mt-4 text-center no-print">
+      <a href="{{ url_for('billing.export_invoice_pdf', invoice_id=invoice_id) }}" class="btn btn-primary me-2">
+        📄 Download PDF
+      </a>
+      <a href="#" onclick="window.print()" class="btn btn-secondary me-2">
+        🖨️ Print
+      </a>
+      <a 
+        class="btn btn-success"
+        target="_blank"
+        href="https://wa.me/?text={{ (
+          '📄 Invoice from Sapthagiri Foods for ' ~ client.shop_name ~
+          ' – Total ₹' ~ total ~ 
+          '. Download PDF: ' ~ request.url_root ~ 'static/invoices/invoice_' ~ invoice_id ~ '.pdf'
+        ) | urlencode }}"
+      >
+        📤 Share on WhatsApp
+      </a>
+    </div>
 
-    conn = get_db_connection()
-    invoice = conn.execute("SELECT * FROM Invoices WHERE id = ?", (invoice_id,)).fetchone()
-    client = conn.execute("SELECT * FROM Clients WHERE id = ?", (invoice['client_id'],)).fetchone()
-    items = conn.execute("""
-        SELECT Items.name, Items.unit, InvoiceItems.price, InvoiceItems.quantity
-        FROM InvoiceItems
-        JOIN Items ON Items.id = InvoiceItems.item_id
-        WHERE InvoiceItems.invoice_id = ?
-    """, (invoice_id,)).fetchall()
-    conn.close()
+  </div>
+</div>
 
-    total = sum(item['price'] * item['quantity'] for item in items)
-
-    enriched_items = []
-    for item in items:
-        enriched_items.append({
-            'name': item['name'],
-            'unit': item['unit'],
-            'price': item['price'],
-            'quantity': item['quantity'],
-            'subtotal': item['price'] * item['quantity']
-        })
-
-    return render_template("invoice.html", 
-                           client=client, 
-                           items=enriched_items, 
-                           total=total,
-                           date=invoice['created_at'], 
-                           invoice_id=invoice_id,
-                           request=request)
-
-# ---------- EXPORT TO PDF ----------
-@billing_bp.route('/print/<int:invoice_id>')
-def export_invoice_pdf(invoice_id):
-    if session.get('role') != 'worker':
-        return redirect(url_for('auth.login'))
-
-    conn = get_db_connection()
-    invoice = conn.execute("SELECT * FROM Invoices WHERE id = ?", (invoice_id,)).fetchone()
-    client = conn.execute("SELECT * FROM Clients WHERE id = ?", (invoice['client_id'],)).fetchone()
-    items = conn.execute("""
-        SELECT Items.name, Items.unit, InvoiceItems.price, InvoiceItems.quantity
-        FROM InvoiceItems
-        JOIN Items ON Items.id = InvoiceItems.item_id
-        WHERE InvoiceItems.invoice_id = ?
-    """, (invoice_id,)).fetchall()
-    conn.close()
-
-    total = sum(item['price'] * item['quantity'] for item in items)
-    enriched_items = []
-    for item in items:
-        enriched_items.append({
-            'name': item['name'],
-            'unit': item['unit'],
-            'price': item['price'],
-            'quantity': item['quantity'],
-            'subtotal': item['price'] * item['quantity']
-        })
-
-    html = render_template("invoice.html", 
-                           client=client, 
-                           items=enriched_items, 
-                           total=total,
-                           date=invoice['created_at'], 
-                           invoice_id=invoice_id,
-                           request=request)
-
-    # ✅ Generate PDF using WeasyPrint
-    pdf = HTML(string=html).write_pdf()
-
-    return (
-        pdf,
-        200,
-        {
-            'Content-Type': 'application/pdf',
-            'Content-Disposition': f'attachment; filename=invoice_{invoice_id}.pdf'
-        }
-    )
+</body>
+</html>
