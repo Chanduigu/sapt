@@ -1,17 +1,9 @@
 from flask import Blueprint, render_template, request, redirect, url_for, session
 import sqlite3
-import pdfkit
-import platform
 import os
+from weasyprint import HTML  # ✅ WeasyPrint instead of pdfkit
 
 billing_bp = Blueprint('billing', __name__, url_prefix='/billing')
-
-# ✅ PDFKit config (only for Windows)
-if platform.system() == "Windows":
-    PDFKIT_PATH = r"C:\Program Files\wkhtmltopdf\bin\wkhtmltopdf.exe"
-    config = pdfkit.configuration(wkhtmltopdf=PDFKIT_PATH) if os.path.exists(PDFKIT_PATH) else None
-else:
-    config = None  # PDF not supported on platforms like Render (Linux)
 
 # ✅ DB connection helper
 def get_db_connection():
@@ -109,16 +101,13 @@ def view_invoice(invoice_id):
                            total=total,
                            date=invoice['created_at'], 
                            invoice_id=invoice_id,
-                           request=request)  # ✅ Needed for WhatsApp link
+                           request=request)
 
 # ---------- EXPORT TO PDF ----------
-@billing_bp.route('/export/pdf/<int:invoice_id>')
+@billing_bp.route('/print/<int:invoice_id>')
 def export_invoice_pdf(invoice_id):
     if session.get('role') != 'worker':
         return redirect(url_for('auth.login'))
-
-    if not config:
-        return "❌ PDF generation not supported on this platform.", 501
 
     conn = get_db_connection()
     invoice = conn.execute("SELECT * FROM Invoices WHERE id = ?", (invoice_id,)).fetchone()
@@ -132,7 +121,6 @@ def export_invoice_pdf(invoice_id):
     conn.close()
 
     total = sum(item['price'] * item['quantity'] for item in items)
-
     enriched_items = []
     for item in items:
         enriched_items.append({
@@ -151,7 +139,8 @@ def export_invoice_pdf(invoice_id):
                            invoice_id=invoice_id,
                            request=request)
 
-    pdf = pdfkit.from_string(html, False, configuration=config)
+    # ✅ Generate PDF using WeasyPrint
+    pdf = HTML(string=html).write_pdf()
 
     return (
         pdf,
