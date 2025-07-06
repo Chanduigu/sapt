@@ -1,28 +1,27 @@
 from flask import Blueprint, render_template, request, redirect, url_for, session
 import sqlite3
-import os
-from weasyprint import HTML  # ✅ Use WeasyPrint for PDF generation
+from io import BytesIO
+from xhtml2pdf import pisa  # ✅ PDF generation without OS-level dependencies
 
 billing_bp = Blueprint('billing', __name__, url_prefix='/billing')
 
-# ✅ DB connection helper
+# DB helper
 def get_db_connection():
     conn = sqlite3.connect('db/sapthagiri.db')
     conn.row_factory = sqlite3.Row
     return conn
 
-# ---------- STEP 1: Client Selection ----------
+# STEP 1: Select Client
 @billing_bp.route('/select')
 def select_client():
     if session.get('role') != 'worker':
         return redirect(url_for('auth.login'))
-
     conn = get_db_connection()
     clients = conn.execute('SELECT * FROM Clients').fetchall()
     conn.close()
     return render_template('select_client.html', clients=clients)
 
-# ---------- STEP 2: Invoice Generation ----------
+# STEP 2: Generate Invoice
 @billing_bp.route('/invoice/<int:client_id>', methods=['GET', 'POST'])
 def generate_invoice(client_id):
     if session.get('role') != 'worker':
@@ -66,7 +65,7 @@ def generate_invoice(client_id):
     conn.close()
     return render_template('generate_invoice.html', client=client, items=items, prices=prices)
 
-# ---------- VIEW INVOICE ----------
+# VIEW INVOICE
 @billing_bp.route('/view/<int:invoice_id>')
 def view_invoice(invoice_id):
     if session.get('role') != 'worker':
@@ -100,7 +99,7 @@ def view_invoice(invoice_id):
                            invoice_id=invoice_id,
                            request=request)
 
-# ---------- EXPORT TO PDF ----------
+# EXPORT TO PDF (Download)
 @billing_bp.route('/print/<int:invoice_id>')
 def export_invoice_pdf(invoice_id):
     if session.get('role') != 'worker':
@@ -134,10 +133,15 @@ def export_invoice_pdf(invoice_id):
                            invoice_id=invoice_id,
                            request=request)
 
-    pdf = HTML(string=html).write_pdf()
+    pdf_stream = BytesIO()
+    pisa_status = pisa.CreatePDF(html, dest=pdf_stream)
 
+    if pisa_status.err:
+        return "❌ PDF generation failed", 500
+
+    pdf_stream.seek(0)
     return (
-        pdf,
+        pdf_stream.read(),
         200,
         {
             'Content-Type': 'application/pdf',
