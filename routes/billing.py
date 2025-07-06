@@ -1,14 +1,22 @@
-from flask import Blueprint, render_template, request, redirect, url_for, session
+from flask import Blueprint, render_template, request, redirect, url_for, session, send_file
 import sqlite3
 import pdfkit
+import platform
 import os
 
 billing_bp = Blueprint('billing', __name__, url_prefix='/billing')
 
-# ✅ PDFKit config - adjust if needed
-PDFKIT_PATH = r"C:\Program Files\wkhtmltopdf\bin\wkhtmltopdf.exe"
-config = pdfkit.configuration(wkhtmltopdf=PDFKIT_PATH)
+# ✅ PDFKit config only for Windows
+if platform.system() == "Windows":
+    PDFKIT_PATH = r"C:\Program Files\wkhtmltopdf\bin\wkhtmltopdf.exe"
+    if os.path.exists(PDFKIT_PATH):
+        config = pdfkit.configuration(wkhtmltopdf=PDFKIT_PATH)
+    else:
+        config = None
+else:
+    config = None  # Render (Linux) - no wkhtmltopdf
 
+# ✅ DB Connection
 def get_db_connection():
     conn = sqlite3.connect('db/sapthagiri.db')
     conn.row_factory = sqlite3.Row
@@ -34,11 +42,7 @@ def generate_invoice(client_id):
     conn = get_db_connection()
     client = conn.execute("SELECT * FROM Clients WHERE id = ?", (client_id,)).fetchone()
     items = conn.execute("SELECT * FROM Items").fetchall()
-
-    price_data = conn.execute("""
-        SELECT item_id, price FROM ClientItemPrices
-        WHERE client_id = ?
-    """, (client_id,)).fetchall()
+    price_data = conn.execute("SELECT item_id, price FROM ClientItemPrices WHERE client_id = ?", (client_id,)).fetchall()
     prices = {row["item_id"]: row["price"] for row in price_data}
 
     if request.method == 'POST':
@@ -65,7 +69,6 @@ def generate_invoice(client_id):
                                (invoice_id, item_id, qty, price))
             conn.commit()
             conn.close()
-
             return redirect(url_for('billing.view_invoice', invoice_id=invoice_id))
 
         conn.close()
@@ -83,19 +86,29 @@ def view_invoice(invoice_id):
     conn = get_db_connection()
     invoice = conn.execute("SELECT * FROM Invoices WHERE id = ?", (invoice_id,)).fetchone()
     client = conn.execute("SELECT * FROM Clients WHERE id = ?", (invoice['client_id'],)).fetchone()
-
     items = conn.execute("""
         SELECT Items.name, Items.unit, InvoiceItems.price, InvoiceItems.quantity
         FROM InvoiceItems
         JOIN Items ON Items.id = InvoiceItems.item_id
         WHERE InvoiceItems.invoice_id = ?
     """, (invoice_id,)).fetchall()
-
     conn.close()
 
     total = sum(item['price'] * item['quantity'] for item in items)
-    return render_template("invoice.html", client=client, items=items, total=total,
-                           date=invoice['created_at'], invoice_id=invoice_id, is_pdf=False)
+
+    # Add subtotal to each item for HTML
+    enriched_items = []
+    for item in items:
+        enriched_items.append({
+            'name': item['name'],
+            'unit': item['unit'],
+            'price': item['price'],
+            'quantity': item['quantity'],
+            'subtotal': item['price'] * item['quantity']
+        })
+
+    return render_template("invoice.html", client=client, items=enriched_items, total=total,
+                           date=invoice['created_at'], invoice_id=invoice_id)
 
 # ---------- EXPORT TO PDF ----------
 @billing_bp.route('/export/pdf/<int:invoice_id>')
@@ -103,22 +116,33 @@ def export_invoice_pdf(invoice_id):
     if session.get('role') != 'worker':
         return redirect(url_for('auth.login'))
 
+    if not config:
+        return "❌ PDF generation not supported on this platform.", 501
+
     conn = get_db_connection()
     invoice = conn.execute("SELECT * FROM Invoices WHERE id = ?", (invoice_id,)).fetchone()
     client = conn.execute("SELECT * FROM Clients WHERE id = ?", (invoice['client_id'],)).fetchone()
-
     items = conn.execute("""
         SELECT Items.name, Items.unit, InvoiceItems.price, InvoiceItems.quantity
         FROM InvoiceItems
         JOIN Items ON Items.id = InvoiceItems.item_id
         WHERE InvoiceItems.invoice_id = ?
     """, (invoice_id,)).fetchall()
-
     conn.close()
 
     total = sum(item['price'] * item['quantity'] for item in items)
-    html = render_template("invoice.html", client=client, items=items, total=total,
-                           date=invoice['created_at'], invoice_id=invoice_id, is_pdf=True)
+    enriched_items = []
+    for item in items:
+        enriched_items.append({
+            'name': item['name'],
+            'unit': item['unit'],
+            'price': item['price'],
+            'quantity': item['quantity'],
+            'subtotal': item['price'] * item['quantity']
+        })
+
+    html = render_template("invoice.html", client=client, items=enriched_items, total=total,
+                           date=invoice['created_at'], invoice_id=invoice_id)
 
     pdf = pdfkit.from_string(html, False, configuration=config)
 
