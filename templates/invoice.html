@@ -54,95 +54,94 @@
 </head>
 <body>
 
-  <div class="container my-4">
-    <div class="invoice-box">
-      <div class="text-center mb-4">
-        <div class="logo">Sapthagiri Foods</div>
-        <div>Bangalore, Karnataka<br><strong>GSTIN: 29ABCDE1234F1Z5</strong></div>
-      </div>
-
-      <table class="table table-borderless info-table">
-        <tr>
-          <td>
-            <strong>Invoice To:</strong><br>
-            {{ client.shop_name }}<br>
-            {{ client.owner_name }}<br>
-            {{ client.address }}
-          </td>
-          <td class="text-end">
-            <strong>Date:</strong><br>{{ date }}
-          </td>
-        </tr>
-      </table>
-
-      <table class="table table-bordered">
-        <thead class="table-success">
-          <tr>
-            <th>Item</th>
-            <th>Unit</th>
-            <th>Quantity</th>
-            <th>Rate (₹)</th>
-            <th>Subtotal (₹)</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for item in items %}
-          <tr>
-            <td>{{ item.name }}</td>
-            <td>{{ item.unit }}</td>
-            <td>{{ item.quantity }}</td>
-            <td>{{ item.price }}</td>
-            <td>{{ item.subtotal }}</td>
-          </tr>
-          {% endfor %}
-        </tbody>
-        <tfoot>
-          <tr>
-            <th colspan="4" class="text-end">Total</th>
-            <th>₹{{ total }}</th>
-          </tr>
-        </tfoot>
-      </table>
-
-      <div class="row mt-5">
-        <div class="col-md-6">
-          <p><strong>Authorized Signature:</strong></p>
-          <div class="mt-5">__________________________</div>
-        </div>
-        <div class="col-md-6 text-end">
-          <p><strong>Firm Seal / Stamp:</strong></p>
-          <div class="stamp-box w-100"></div>
-        </div>
-      </div>
-
-      <div class="footer-note">
-        Thank you for choosing Sapthagiri Foods!<br>
-        For inquiries, contact: +91-9242143039
-      </div>
-
-      <div class="mt-4 text-center no-print">
-        <a href="{{ url_for('billing.export_invoice_pdf', invoice_id=invoice_id) }}" class="btn btn-primary me-2">
-          📄 Download PDF
-        </a>
-
-        <a href="#" onclick="window.print()" class="btn btn-secondary me-2">
-          🖨️ Print
-        </a>
-
-        <!-- ✅ Share on WhatsApp -->
-        <a 
-          class="btn btn-success"
-          target="_blank"
-          href="https://wa.me/?text={{ (
-            '📄 Sapthagiri Foods Invoice for ' ~ client.shop_name ~ 
-            ' - Total ₹' ~ total ~ 
-            '. Download PDF: ' ~ request.url_root ~ 'static/invoices/invoice_' ~ invoice_id ~ '.pdf'
-          ) | urlencode }}"
-        >📤 Share on WhatsApp</a>
-      </div>
-
+<div class="container my-4">
+  <div class="invoice-box">
+    <div class="text-center mb-4">
+      <div class="logo">Sapthagiri Foods</div>
+      <div>Bangalore, Karnataka<br><strong>GSTIN: 29ABCDE1234F1Z5</strong></div>
     </div>
+
+    <table class="table table-borderless info-table">
+      <tr>
+        <td>
+          <strong>Invoice To:</strong><br>
+          {{ client.shop_name }}<br>
+          {{ client.owner_name }}<br>
+          {{ client.address }}
+        </td>
+        <td class="text-end">
+          <strong>Date:</strong><br>{{ date }}
+        </td>
+      </tr>
+    </table>
+
+    <table class="table table-bordered">
+      <thead class="table-success">
+        <tr>
+          <th>Item</th>
+          <th>Unit</th>
+          <th>Quantity</th>
+          <th>Rate (₹)</th>
+          <th>Subtotal (₹)</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in items %}
+        <tr>
+          <td>{{ item.name }}</td>
+          <td>{{ item.unit }}</td>
+          <td>{{ item.quantity }}</td>
+          <td>{{ item.price }}</td>
+          <td>{{ item.subtotal }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+      <tfoot>
+        <tr>
+          <th colspan="4" class="text-end">Total</th>
+          <th>₹{{ total }}</th>
+        </tr>
+      </tfoot>
+    </table>
+
+    <div class="row mt-5">
+      <div class="col-md-6">
+        <p><strong>Authorized Signature:</strong></p>
+        <div class="mt-5">__________________________</div>
+      </div>
+      <div class="col-md-6 text-end">
+        <p><strong>Firm Seal / Stamp:</strong></p>
+        <div class="stamp-box w-100"></div>
+      </div>
+    </div>
+
+    <div class="footer-note">
+      Thank you for choosing Sapthagiri Foods!<br>
+      For inquiries, contact: +91-9242143039
+    </div>
+
+    <div class="mt-4 text-center no-print">
+      <a href="{{ url_for('billing.export_invoice_pdf', invoice_id=invoice_id) }}" class="btn btn-primary me-2">
+        📄 Download PDF
+      </a>
+      <a href="#" onclick="window.print()" class="btn btn-secondary me-2">
+        🖨️ Print
+      </a>
+      <a 
+        class="btn btn-success"
+        target="_blank"
+        href="https://wa.me/?text={{ (
+          '📄 Invoice from Sapthagiri Foods for ' ~ client.shop_name ~
+          ' – Total ₹' ~ total ~ 
+          '. Download PDF: ' ~ request.url_root ~ 'static/invoices/invoice_' ~ invoice_id ~ '.pdf'
+        ) | urlencode }}"
+      >
+        📤 Share on WhatsApp
+      </a>
+    </div>
+
   </div>
+</div>
 
 </body>
 </html>
