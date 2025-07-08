@@ -71,7 +71,8 @@
       <div class="nav-links">
         <a href="{{ url_for('admin.manage_clients') }}" class="btn btn-outline-primary">Manage Clients</a>
         <a href="{{ url_for('admin.manage_items') }}" class="btn btn-outline-success">Manage Products</a>
-        <a href="#" class="btn btn-outline-warning">Reports</a>
+        <a href="{{ url_for('search.search_invoices') }}" class="btn btn-primary">🔍 Search Invoices</a>
+
       </div>
 
       {% elif role == 'worker' %}
