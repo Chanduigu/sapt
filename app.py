@@ -2,6 +2,7 @@ from flask import Flask
 from routes.auth import auth_bp
 from routes.admin import admin_bp
 from routes.billing import billing_bp
+from routes.search import search_bp  # ✅ Add this line
 
 import os
 import sqlite3
@@ -13,6 +14,7 @@ app.secret_key = 'sapthagiri-foods'
 app.register_blueprint(auth_bp)
 app.register_blueprint(admin_bp)
 app.register_blueprint(billing_bp)
+app.register_blueprint(search_bp)  # ✅ Register the search route
 
 # ✅ Ensure DB and sample data exist on first deploy
 def init_db_if_needed():
@@ -54,6 +56,7 @@ def init_db_if_needed():
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             client_id INTEGER,
             worker TEXT,
+            total_amount REAL,
             created_at TEXT DEFAULT CURRENT_TIMESTAMP
         )""")
 
@@ -63,7 +66,8 @@ def init_db_if_needed():
             invoice_id INTEGER,
             item_id INTEGER,
             quantity INTEGER,
-            price REAL
+            price REAL,
+            total REAL
         )""")
 
         # Insert sample users
