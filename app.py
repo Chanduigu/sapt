@@ -71,7 +71,7 @@ def init_db_if_needed():
         )""")
 
         # Insert sample users
-        c.execute("INSERT INTO Users (username, password, role) VALUES (?, ?, ?)", ("admin", "Chandu", "hemanth"))
+        c.execute("INSERT INTO Users (username, password, role) VALUES (?, ?, ?)", ("admin", "admin123", "admin"))
         c.execute("INSERT INTO Users (username, password, role) VALUES (?, ?, ?)", ("worker1", "worker123", "worker"))
 
         conn.commit()
